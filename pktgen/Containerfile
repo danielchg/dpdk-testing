@@ -1,0 +1,47 @@
+# --- Stage 1: Build Stage ---
+FROM  fedora:43 AS builder
+
+# Install build depeondencies
+RUN dnf install -y \
+    git gcc make meson ninja-build \
+    python3-pyelftools libbsd-devel numactl-devel \
+    libpcap-devel kernel-headers \
+    dpdk dpdk-devel dpdk-tools && \
+    dnf clean all
+
+WORKDIR /build
+
+# 1. Download and Build DPDK (Required for pktgen)
+# It is critical to match the DPDK version with what pktgen expects
+# ENV DPDK_VER=22.11
+# RUN git clone --depth 1 --branch v${DPDK_VER} http://dpdk.org/git/dpdk && \
+#     cd dpdk && \
+#     meson setup build && \
+#     ninja -C build install && \
+#     ldconfig
+
+# 2. Download and Build Pktgen-DPDK
+RUN git clone https://github.com/pktgen/Pktgen-DPDK.git && \
+    cd Pktgen-DPDK && \
+    meson setup build && \
+    ninja -C build && \
+    cp build/app/pktgen /usr/local/bin/pktgen
+
+# --- Stage 2: Runtime Stage ---
+# FROM fedora:43
+# 
+# # Install only the necessary runtime libraries
+# RUN dnf install -y \
+#     numactl-libs libpcap libbsd && \
+#     dnf clean all
+# 
+# # Copy the compiled binary and libraries from the builder stage
+# COPY --from=builder /usr/local/bin/pktgen /usr/local/bin/pktgen
+# COPY --from=builder /usr/local/lib64/ /usr/local/lib64/
+# 
+# # Update library cache
+# RUN echo "/usr/local/lib64" > /etc/ld.so.conf.d/dpdk.conf && ldconfig
+# 
+# # Set the default command
+# # ENTRYPOINT ["/usr/local/bin/pktgen"]
+CMD ["/bin/bash"]
