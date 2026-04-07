@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Pod
+metadata:
+ annotations:
+   k8s.v1.cni.cncf.io/networks: '[
+     {
+      "name": "net1",
+      "namespace": "testpmd"
+     },
+     {
+      "name": "net2",
+      "namespace": "testpmd"
+     }
+   ]'
+   cpu-load-balancing.crio.io: disable
+   cpu-quota.crio.io: disable
+   irq-load-balancing.crio.io: "disable"
+ labels:
+   app: testpmd
+ name: testpmd
+ namespace: testpmd
+spec:
+  tolerations:
+   - key: "high-throughput"
+     value: "true"
+     effect: "NoSchedule"
+  containers:
+    - command:
+        - /bin/bash
+        - -c
+        - sleep infinity
+      # image: quay.io/javierpena/dpdk:21.11.2_c9s
+      image:  quay.io/container-perf-tools/dpdk-testpmd:24.11
+      imagePullPolicy: Always
+      name: pktgen
+      resources:
+        limits:
+          cpu: "10"
+          hugepages-1Gi: 4Gi
+          memory: 2Gi
+        requests:
+          cpu: "10"
+          hugepages-1Gi: 4Gi
+          memory: 2Gi
+      securityContext:
+        privileged: true
+        capabilities:
+          add:
+            - IPC_LOCK
+            - SYS_RESOURCE
+            - NET_RAW
+            - NET_ADMIN
+        runAsUser: 0
+      volumeMounts:
+        - mountPath: /mnt/huge
+          name: hugepages
+        - name: modules
+          mountPath: /lib/modules
+  terminationGracePeriodSeconds: 5
+  nodeSelector:
+    kubernetes.io/hostname: htworker1.ocp1.e5gc.bos2.lab
+  volumes:
+    - name: modules
+      hostPath:
+        path: /lib/modules
+    - emptyDir:
+        medium: HugePages
+      name: hugepages
+  runtimeClassName: performance-ht100gb
+
