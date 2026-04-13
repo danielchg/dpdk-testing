@@ -15,12 +15,24 @@ dpdk-testpmd -l 4,6,8,10,12 -n 8 -a 0000:22:09.3 -a 0000:22:19.2 --socket-mem=10
 pktgen -v -l "4,6,8,10,12" -a 0000:22:09.2 -a 0000:22:19.1 -n 8 --socket-mem=1024,0 --in-memory -- -m [6,8].0 -m [10,12].1
  
  
-set 0 dst mac 82:29:9f:c0:9d:62
-set 1 dst mac 7a:7d:7f:8d:24:c9
+set 0 dst mac d2:6a:7f:da:c5:7b
+set 1 dst mac 52:12:78:e7:9f:89
+
 set 0,1 proto udp
-set 0,1 rate 30
 set 0,1 size 1500
 set all burst 64
+
+set 0,1 rate 100
+set 0,1 count 500
+start 0
+start 1
+
+clear 0,1 stats
+set 0,1 count 0
+
+
+set 0,1 rate 30
+
 start 0,1
 stop 0,1
 
